@@ -23,16 +23,6 @@ namespace PDFerter.Controllers
         [HttpPost(ApiRoutes.Convert)]
         public async Task<IActionResult> Convert(ICollection<IFormFile> files)
         {
-            var test = files;
-
-            foreach (IFormFile file in files)
-            {
-                using (var fileStream = new FileStream(@$"C:/Users/mzele/Documents/Projects/PDFerter/TestFiles/file{Guid.NewGuid()}.pdf", FileMode.Create))
-                {
-                    await file.CopyToAsync(fileStream);
-                    fileStream.Close();
-                }
-            }
 
 
             return Ok("It`s okay");
