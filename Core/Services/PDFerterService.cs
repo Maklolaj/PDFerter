@@ -14,7 +14,7 @@ namespace PDFerter.Core.Services
     {
         public async Task<string[]> saveFilesLocally(ICollection<IFormFile> files)
         {
-            string[] filepaths = new string[files.Count];
+            List<string> filepaths = new List<string>();
 
             foreach (IFormFile file in files)
             {
@@ -23,13 +23,14 @@ namespace PDFerter.Core.Services
                 {
                     await file.CopyToAsync(fileStream);
                     fileStream.Close();
-                    filepaths.Append(filePath);
+
                 }
+                filepaths.Add(filePath);
             }
-            return filepaths;
+            return filepaths.ToArray();
         }
 
-        public PdfDocument mergeTwoPDFs(string[] pdfFilePaths)
+        public async Task<PdfDocument> mergeTwoPDFs(string[] pdfFilePaths)
         {
             PdfDocument document = new PdfDocument();
 

@@ -9,7 +9,7 @@ namespace PDFerter.Core.Interfaces
     {
         Task<string[]> saveFilesLocally(ICollection<IFormFile> files);
 
-        PdfDocument mergeTwoPDFs(string[] pdfFilePaths);
+        Task<PdfDocument> mergeTwoPDFs(string[] pdfFilePaths);
     }
 
 }
