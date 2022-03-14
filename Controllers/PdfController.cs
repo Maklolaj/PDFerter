@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PDFerter.Contracts;
 using PDFerter.Core.Interfaces;
-using PDFerter.Models;
 
 namespace PDFerter.Controllers
 {
@@ -26,21 +22,14 @@ namespace PDFerter.Controllers
         }
 
         [HttpPost(ApiRoutes.Convert)]
-        public async Task<IActionResult> Convert(ICollection<IFormFile> files)
+        public async Task<FileContentResult> Convert(ICollection<IFormFile> files)
         {
+            await _pdfService.mergeTwoPDFs(await _pdfService.saveFilesLocally(files));
+            var realResultFile = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/result.pdf"),
+                "application/octet-stream", "result.pdf");
 
-            _logger.LogInformation("XD");
-            var localFilePaths = await _pdfService.saveFilesLocally(files);
-            var resultFile = await _pdfService.mergeTwoPDFs(localFilePaths);
-
-            return Ok(new PDFileResult
-            {
-                Id = Guid.NewGuid(),
-                File = resultFile,
-            });
+            _pdfService.performDeleteFile(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/result.pdf");
+            return realResultFile;
         }
-
-
-
     }
 }
