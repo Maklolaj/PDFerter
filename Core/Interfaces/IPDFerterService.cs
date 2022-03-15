@@ -14,6 +14,8 @@ namespace PDFerter.Core.Interfaces
         void performDeleteFile(string filePath);
 
         Task<string> performSaveFile(IFormFile filePath);
+
+        void splitTwoPDFs(string pdfFilePath, int splitIndex);
     }
 
 }

@@ -55,6 +55,33 @@ namespace PDFerter.Core.Services
             return PdfReader.Open(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/result.pdf", PdfDocumentOpenMode.Import);
         }
 
+        public async void splitTwoPDFs(string pdfFilePath, int splitIndex)
+        {
+            PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import));
+
+            PdfDocument document1 = new PdfDocument();
+            document1.Version = inputPDFDocument.Version;
+
+            PdfDocument document2 = new PdfDocument();
+            document2.Version = inputPDFDocument.Version;
+
+            if (splitIndex <= inputPDFDocument.PageCount - 1 && splitIndex > 0)
+            {
+                for (int i = 0; i < splitIndex; i++)
+                {
+                    document1.AddPage(inputPDFDocument.Pages[i]);
+                }
+                document1.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
+
+                for (int i = splitIndex; i <= inputPDFDocument.PageCount - 1; i++)
+                {
+                    document2.AddPage(inputPDFDocument.Pages[i]);
+                }
+                document2.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
+            }
+
+        }
+
         public void performDeleteFile(string filePath)
         {
             try
