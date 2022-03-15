@@ -5,5 +5,7 @@ namespace PDFerter.Contracts
         public const string Base = "api";
 
         public const string Convert = Base + "/" + "convert";
+
+        public const string Split = Base + "/" + "split";
     }
 }
