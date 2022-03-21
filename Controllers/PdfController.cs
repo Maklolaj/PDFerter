@@ -9,6 +9,9 @@ using PDFerter.Core.Interfaces;
 using System.IO.Compression;
 using System.IO;
 using System;
+using Microsoft.AspNetCore.Hosting;
+using ICSharpCode.SharpZipLib.Core;
+using ICSharpCode.SharpZipLib.Zip;
 
 namespace PDFerter.Controllers
 {
@@ -19,10 +22,13 @@ namespace PDFerter.Controllers
 
         private readonly IPDFerterService _pdfService;
 
-        public PdfController(ILogger<PdfController> logger, IPDFerterService pdfService)
+        private readonly IHostingEnvironment _oIHostingEnvironment;
+
+        public PdfController(ILogger<PdfController> logger, IPDFerterService pdfService, IHostingEnvironment oIHostingEnvironment)
         {
             _logger = logger;
             _pdfService = pdfService;
+            _oIHostingEnvironment = oIHostingEnvironment;
         }
 
         [HttpPost(ApiRoutes.Convert)]
@@ -46,50 +52,63 @@ namespace PDFerter.Controllers
         }
 
         [HttpPost("api/test")]
-        public async Task<ZipArchive> test()
+        public async Task<FileContentResult> test()
         {
             var file1 = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf"),
             "application/octet-stream", "splitResult1.pdf");
+            file1.FileDownloadName = "splitResult1.pdf";
 
             var file2 = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf"),
             "application/octet-stream", "splitResult1.pdf");
+            file2.FileDownloadName = "splitResult2.pdf";
 
             var result = new List<FileContentResult> { file1, file2 };
 
-            // using (var memoryStream = new MemoryStream())
-            // {
-            // using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-            // {
-            //     var file1 = archive.CreateEntry("file1.txt");
-            //     using (var streamWriter = new StreamWriter(file1.Open()))
-            //     {
-            //         streamWriter.Write("content1");
-            //     }
+            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip")))
+            {
+                zipOutputStream.SetLevel(9);
 
-            //     var file2 = archive.CreateEntry("file2.txt");
-            //     using (var streamWriter = new StreamWriter(file2.Open()))
-            //     {
-            //         streamWriter.Write("content2");
-            //     }
-            // }
+                byte[] buffer = new byte[4096];
 
-            // return File(memoryStream.ToArray(), "application/zip", "Images.zip");
-            if (System.IO.File.Exists("archive.zip"))
-                System.IO.File.Delete("archive.zip");
+                for (int i = 0; i < result.Count; i++)
+                {
+                    ZipEntry entry = new ZipEntry(result[i].FileDownloadName);
+                    entry.DateTime = DateTime.Now;
+                    entry.IsUnicodeText = true;
+                    zipOutputStream.PutNextEntry(entry);
 
-            using var archive = ZipFile.Open(@"archive.zip", ZipArchiveMode.Create);
+                    using (FileStream oFileStream = System.IO.File.OpenRead($@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult{i + 1}.pdf"))
+                    {
+                        int sourceBytes;
+                        do
+                        {
+                            sourceBytes = oFileStream.Read(buffer, 0, buffer.Length);
+                            zipOutputStream.Write(buffer, 0, sourceBytes);
+                        } while (sourceBytes > 0);
+                    }
 
-            var file11 = System.IO.File.OpenRead(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
-            var file22 = System.IO.File.OpenRead(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
+                }
+                zipOutputStream.Finish();
+                zipOutputStream.Flush();
+                zipOutputStream.Close();
 
-            var entry1 = archive.CreateEntry("test1.pdf", CompressionLevel.Optimal);
-            // var entry2 = archive.CreateEntry("test2.pdf", CompressionLevel.Optimal);
 
-            await file11.CopyToAsync(entry1.Open());
+            }
 
-            await file22.CopyToAsync(entry1.Open());
+            var finalResult = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"),
+            "application/zip", "result.zip");
 
-            return archive;
+            if (System.IO.File.Exists(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"))
+            {
+                System.IO.File.Delete(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
+            }
+
+            if (finalResult == null)
+            {
+                throw new Exception(String.Format("Nothing Found"));
+            }
+
+            return finalResult;
         }
 
     }
