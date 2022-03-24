@@ -8,7 +8,10 @@ using PdfSharp.Pdf;
 using System.Linq;
 using PdfSharp.Pdf.IO;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
+using ICSharpCode.SharpZipLib.Core;
+using ICSharpCode.SharpZipLib.Zip;
 namespace PDFerter.Core.Services
 {
     public class PDFerterService : IPDFerterService
@@ -80,6 +83,56 @@ namespace PDFerter.Core.Services
                 document2.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
             }
 
+        }
+
+        public byte[] CreateZipResult()
+        {
+            var file1 = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
+            var file2 = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
+            var result = new List<byte[]> { file1, file2 };
+
+            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip")))
+            {
+                zipOutputStream.SetLevel(9);
+
+                byte[] buffer = new byte[4096];
+
+                for (int i = 0; i < result.Count; i++)
+                {
+                    ZipEntry entry = new ZipEntry($"splitResult{i + 1}.pdf");
+                    entry.DateTime = DateTime.Now;
+                    entry.IsUnicodeText = true;
+                    zipOutputStream.PutNextEntry(entry);
+
+                    using (FileStream oFileStream = System.IO.File.OpenRead($@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult{i + 1}.pdf"))
+                    {
+                        int sourceBytes;
+                        do
+                        {
+                            sourceBytes = oFileStream.Read(buffer, 0, buffer.Length);
+                            zipOutputStream.Write(buffer, 0, sourceBytes);
+                        } while (sourceBytes > 0);
+                    }
+
+                }
+                zipOutputStream.Finish();
+                zipOutputStream.Flush();
+                zipOutputStream.Close();
+            }
+
+            var finalResult = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
+
+            if (System.IO.File.Exists(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"))
+            {
+                System.IO.File.Delete(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
+            }
+
+            if (finalResult == null)
+            {
+                throw new Exception(String.Format("Nothing Found"));
+            }
+
+            return finalResult;
         }
 
         public void performDeleteFile(string filePath)

@@ -12,6 +12,7 @@ using System;
 using Microsoft.AspNetCore.Hosting;
 using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
+using System.Reflection;
 
 namespace PDFerter.Controllers
 {
@@ -21,14 +22,10 @@ namespace PDFerter.Controllers
         private readonly ILogger<PdfController> _logger;
 
         private readonly IPDFerterService _pdfService;
-
-        private readonly IHostingEnvironment _oIHostingEnvironment;
-
-        public PdfController(ILogger<PdfController> logger, IPDFerterService pdfService, IHostingEnvironment oIHostingEnvironment)
+        public PdfController(ILogger<PdfController> logger, IPDFerterService pdfService)
         {
             _logger = logger;
             _pdfService = pdfService;
-            _oIHostingEnvironment = oIHostingEnvironment;
         }
 
         [HttpPost(ApiRoutes.Convert)]
@@ -43,72 +40,20 @@ namespace PDFerter.Controllers
         }
 
         [HttpPost(ApiRoutes.Split)]
-        public async Task<IActionResult> Split(int index)
+        public async Task<FileContentResult> Split([FromRoute] int index)
         {
             _logger.LogInformation(index.ToString());
-            _pdfService.splitTwoPDFs(@"C:/Users/mzele/Documents/Projects/PDF converter test/inputFiles/ABCD file.pdf", 2);
-
-            return Ok("works?");
+            _pdfService.splitTwoPDFs(@"C:/Users/mzele/Documents/Projects/PDF converter test/inputFiles/ABCD file.pdf", index);
+            var finalResult = File(_pdfService.CreateZipResult(), "application/zip", "result.zip");
+            return finalResult;
         }
 
         [HttpPost("api/test")]
-        public async Task<FileContentResult> test()
+        public IActionResult test()
         {
-            var file1 = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf"),
-            "application/octet-stream", "splitResult1.pdf");
-            file1.FileDownloadName = "splitResult1.pdf";
-
-            var file2 = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf"),
-            "application/octet-stream", "splitResult1.pdf");
-            file2.FileDownloadName = "splitResult2.pdf";
-
-            var result = new List<FileContentResult> { file1, file2 };
-
-            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip")))
-            {
-                zipOutputStream.SetLevel(9);
-
-                byte[] buffer = new byte[4096];
-
-                for (int i = 0; i < result.Count; i++)
-                {
-                    ZipEntry entry = new ZipEntry(result[i].FileDownloadName);
-                    entry.DateTime = DateTime.Now;
-                    entry.IsUnicodeText = true;
-                    zipOutputStream.PutNextEntry(entry);
-
-                    using (FileStream oFileStream = System.IO.File.OpenRead($@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult{i + 1}.pdf"))
-                    {
-                        int sourceBytes;
-                        do
-                        {
-                            sourceBytes = oFileStream.Read(buffer, 0, buffer.Length);
-                            zipOutputStream.Write(buffer, 0, sourceBytes);
-                        } while (sourceBytes > 0);
-                    }
-
-                }
-                zipOutputStream.Finish();
-                zipOutputStream.Flush();
-                zipOutputStream.Close();
 
 
-            }
-
-            var finalResult = File(System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"),
-            "application/zip", "result.zip");
-
-            if (System.IO.File.Exists(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"))
-            {
-                System.IO.File.Delete(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
-            }
-
-            if (finalResult == null)
-            {
-                throw new Exception(String.Format("Nothing Found"));
-            }
-
-            return finalResult;
+            return Ok();
         }
 
     }

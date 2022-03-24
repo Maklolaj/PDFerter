@@ -6,6 +6,6 @@ namespace PDFerter.Contracts
 
         public const string Convert = Base + "/" + "convert";
 
-        public const string Split = Base + "/" + "split";
+        public const string Split = Base + "/" + "split/{index}";
     }
 }
