@@ -5,13 +5,11 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using PdfSharp.Pdf;
-using System.Linq;
 using PdfSharp.Pdf.IO;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Hosting;
-using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
+using PDFerter.Contracts;
+
 namespace PDFerter.Core.Services
 {
     public class PDFerterService : IPDFerterService
@@ -21,6 +19,7 @@ namespace PDFerter.Core.Services
         {
             _logger = logger;
         }
+
         public async Task<string[]> saveFilesLocally(ICollection<IFormFile> files)
         {
             List<string> filepaths = new List<string>();
@@ -53,9 +52,9 @@ namespace PDFerter.Core.Services
                 performDeleteFile(filePath);
             }
 
-            document.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/result.pdf");
+            document.Save(@$"{LocalPaths.resultFilesPath}result.pdf");
 
-            return PdfReader.Open(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/result.pdf", PdfDocumentOpenMode.Import);
+            return PdfReader.Open(@$"{LocalPaths.resultFilesPath}result.pdf", PdfDocumentOpenMode.Import);
         }
 
         public async void splitTwoPDFs(string pdfFilePath, int splitIndex)
@@ -74,24 +73,24 @@ namespace PDFerter.Core.Services
                 {
                     document1.AddPage(inputPDFDocument.Pages[i]);
                 }
-                document1.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
+                document1.Save(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
 
                 for (int i = splitIndex; i <= inputPDFDocument.PageCount - 1; i++)
                 {
                     document2.AddPage(inputPDFDocument.Pages[i]);
                 }
-                document2.Save(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
+                document2.Save(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
             }
 
         }
 
         public byte[] CreateZipResult()
         {
-            var file1 = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
-            var file2 = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult2.pdf");
+            var file1 = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
+            var file2 = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
             var result = new List<byte[]> { file1, file2 };
 
-            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip")))
+            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@$"{LocalPaths.resultFilesPath}MyZup.zip")))
             {
                 zipOutputStream.SetLevel(9);
 
@@ -104,7 +103,7 @@ namespace PDFerter.Core.Services
                     entry.IsUnicodeText = true;
                     zipOutputStream.PutNextEntry(entry);
 
-                    using (FileStream oFileStream = System.IO.File.OpenRead($@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/splitResult{i + 1}.pdf"))
+                    using (FileStream oFileStream = System.IO.File.OpenRead($@"{LocalPaths.resultFilesPath}splitResult{i + 1}.pdf"))
                     {
                         int sourceBytes;
                         do
@@ -120,11 +119,11 @@ namespace PDFerter.Core.Services
                 zipOutputStream.Close();
             }
 
-            var finalResult = System.IO.File.ReadAllBytes(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
+            var finalResult = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}MyZup.zip");
 
-            if (System.IO.File.Exists(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip"))
+            if (System.IO.File.Exists(@$"{LocalPaths.resultFilesPath}MyZup.zip"))
             {
-                System.IO.File.Delete(@"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/ResultFiles/MyZup.zip");
+                System.IO.File.Delete(@$"{LocalPaths.resultFilesPath}MyZup.zip");
             }
 
             if (finalResult == null)
@@ -158,7 +157,7 @@ namespace PDFerter.Core.Services
         public async Task<string> performSaveFile(IFormFile file)
         {
             var id = Guid.NewGuid();
-            var filePath = @$"C:/Users/mzele/Documents/Projects/PDFerter/WorkFiles/file{id}.pdf";
+            var filePath = @$"{LocalPaths.workFilesPath}/file{id}.pdf";
             try
             {
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
