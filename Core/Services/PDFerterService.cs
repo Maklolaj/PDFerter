@@ -82,6 +82,7 @@ namespace PDFerter.Core.Services
                 document2.Save(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
             }
 
+            performDeleteFile(pdfFilePath);
         }
 
         public async Task<byte[]> CreateZipResult()
@@ -119,6 +120,8 @@ namespace PDFerter.Core.Services
                 zipOutputStream.Close();
             }
 
+            performDeleteFile(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
+            performDeleteFile(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
             var finalResult = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}MyZup.zip");
 
             if (System.IO.File.Exists(@$"{LocalPaths.resultFilesPath}MyZup.zip"))

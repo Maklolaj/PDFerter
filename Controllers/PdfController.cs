@@ -5,21 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PDFerter.Contracts;
 using PDFerter.Core.Interfaces;
-using System.IO;
-using System.Reflection;
-
 
 namespace PDFerter.Controllers
 {
     public class PdfController : Controller
     {
-
-        private readonly ILogger<PdfController> _logger;
-
         private readonly IPDFerterService _pdfService;
         public PdfController(ILogger<PdfController> logger, IPDFerterService pdfService)
         {
-            _logger = logger;
             _pdfService = pdfService;
         }
 
@@ -37,26 +30,9 @@ namespace PDFerter.Controllers
         [HttpPost(ApiRoutes.Split)]
         public async Task<FileContentResult> Split([FromRoute] int index, IFormFile file)
         {
-            _logger.LogInformation(index.ToString()); //@"C:/Users/mzele/Documents/Projects/PDF converter test/inputFiles/ABCD file.pdf"
             await _pdfService.splitTwoPDFs(await _pdfService.performSaveFile(file), index);
             var finalResult = File(await _pdfService.CreateZipResult(), "application/zip", "result.zip");
             return finalResult;
         }
-
-        [HttpPost("api/test")]
-        public IActionResult test()
-        {
-
-            //var file1 = System.IO.File.ReadAllBytes(@"PDFerter/WorkFiles/ResultFiles/splitResult1.pdf");
-            var localPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\WorkFiles\Resultfiles"));
-            _logger.LogInformation(localPath);
-
-            var resultFilesPath = Path.GetFullPath(Path.Combine(localPath, @"WorkFiles\Resultfiles"));
-            _logger.LogInformation(resultFilesPath);
-
-
-            return Ok();
-        }
-
     }
 }
