@@ -27,7 +27,7 @@ namespace PDFerter.Controllers
         public async Task<FileContentResult> Convert(ICollection<IFormFile> files)
         {
             await _pdfService.mergeTwoPDFs(await _pdfService.saveFilesLocally(files));
-            var realResultFile = File(System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}result.pdf"),
+            var realResultFile = File(await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}result.pdf"),
                 "application/octet-stream", "result.pdf");
 
             _pdfService.performDeleteFile(@$"{LocalPaths.resultFilesPath}result.pdf");
@@ -35,11 +35,11 @@ namespace PDFerter.Controllers
         }
 
         [HttpPost(ApiRoutes.Split)]
-        public async Task<FileContentResult> Split([FromRoute] int index)
+        public async Task<FileContentResult> Split([FromRoute] int index, IFormFile file)
         {
-            _logger.LogInformation(index.ToString());
-            _pdfService.splitTwoPDFs(@"C:/Users/mzele/Documents/Projects/PDF converter test/inputFiles/ABCD file.pdf", index); // FIX ASYNC BUG! 
-            var finalResult = File(_pdfService.CreateZipResult(), "application/zip", "result.zip"); // FIX ASYNC BUG! 
+            _logger.LogInformation(index.ToString()); //@"C:/Users/mzele/Documents/Projects/PDF converter test/inputFiles/ABCD file.pdf"
+            await _pdfService.splitTwoPDFs(await _pdfService.performSaveFile(file), index);
+            var finalResult = File(await _pdfService.CreateZipResult(), "application/zip", "result.zip");
             return finalResult;
         }
 

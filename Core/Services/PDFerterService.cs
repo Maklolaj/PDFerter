@@ -57,7 +57,7 @@ namespace PDFerter.Core.Services
             return PdfReader.Open(@$"{LocalPaths.resultFilesPath}result.pdf", PdfDocumentOpenMode.Import);
         }
 
-        public async void splitTwoPDFs(string pdfFilePath, int splitIndex)
+        public async Task splitTwoPDFs(string pdfFilePath, int splitIndex)
         {
             PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import));
 
@@ -84,10 +84,10 @@ namespace PDFerter.Core.Services
 
         }
 
-        public byte[] CreateZipResult()
+        public async Task<byte[]> CreateZipResult()
         {
-            var file1 = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
-            var file2 = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
+            var file1 = await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
+            var file2 = await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
             var result = new List<byte[]> { file1, file2 };
 
             using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@$"{LocalPaths.resultFilesPath}MyZup.zip")))

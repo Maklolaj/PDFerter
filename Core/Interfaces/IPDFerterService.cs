@@ -15,9 +15,9 @@ namespace PDFerter.Core.Interfaces
 
         Task<string> performSaveFile(IFormFile filePath);
 
-        void splitTwoPDFs(string pdfFilePath, int splitIndex);
+        Task splitTwoPDFs(string pdfFilePath, int splitIndex);
 
-        byte[] CreateZipResult();
+        Task<byte[]> CreateZipResult();
     }
 
 }
