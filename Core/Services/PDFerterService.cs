@@ -57,7 +57,7 @@ namespace PDFerter.Core.Services
             return PdfReader.Open(@$"{LocalPaths.resultFilesPath}result.pdf", PdfDocumentOpenMode.Import);
         }
 
-        public async Task splitTwoPDFs(string pdfFilePath, int splitIndex)
+        public async Task<bool> splitTwoPDFs(string pdfFilePath, int splitIndex)
         {
             PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import));
 
@@ -80,9 +80,11 @@ namespace PDFerter.Core.Services
                     document2.AddPage(inputPDFDocument.Pages[i]);
                 }
                 document2.Save(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
-            }
 
-            performDeleteFile(pdfFilePath);
+                performDeleteFile(pdfFilePath);
+                return true;
+            }
+            return false;
         }
 
         public async Task<byte[]> CreateZipResult()

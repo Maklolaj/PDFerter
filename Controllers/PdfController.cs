@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,12 +18,11 @@ namespace PDFerter.Controllers
         }
 
         [HttpPost(ApiRoutes.Merge)]
-        public async Task<FileContentResult> Merge(ICollection<IFormFile> files)
+        public async Task<IActionResult> Merge(MergeFilesModel files)
         {
-
-            if (ModelState.IsValid)  // ICollection<InputFileModel> DOES NOT WORK // CREATE CUSTOM VALIDATION
+            if (ModelState.IsValid)
             {
-                await _pdfService.mergeTwoPDFs(await _pdfService.saveFilesLocally(files));
+                await _pdfService.mergeTwoPDFs(await _pdfService.saveFilesLocally(new List<IFormFile>() { files.PdfFileOne, files.PdfFileTwo }));
 
                 var realResultFile = File(await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}result.pdf"),
                     "application/octet-stream", "result.pdf");
@@ -32,20 +30,24 @@ namespace PDFerter.Controllers
                 _pdfService.performDeleteFile(@$"{LocalPaths.resultFilesPath}result.pdf");
                 return realResultFile;
             }
-            return new FileContentResult(new byte[0], "empty");
+
+            return BadRequest("Unsupported file format");
         }
 
         [HttpPost(ApiRoutes.Split)]
-        public async Task<FileContentResult> Split([FromRoute] int index, InputFileModel file)
+        public async Task<IActionResult> Split([FromRoute] string index, SplitFileModel file)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && int.TryParse(index, out int number))
             {
-                await _pdfService.splitTwoPDFs(await _pdfService.performSaveFile(file.PdfFile), index);
-                var finalResult = File(await _pdfService.CreateZipResult(), "application/zip", "result.zip");
-                return finalResult;
+                if (await _pdfService.splitTwoPDFs(await _pdfService.performSaveFile(file.PdfFile), number))
+                {
+                    var finalResult = File(await _pdfService.CreateZipResult(), "application/zip", "result.zip");
+                    return finalResult;
+                }
+                return BadRequest("Invalid index");
             }
-            return new FileContentResult(new byte[0], "empty");
 
+            return BadRequest("Unsupported file format");
         }
     }
 }
