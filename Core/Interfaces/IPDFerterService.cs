@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using PdfSharp.Pdf;
+using System.IO;
 
 namespace PDFerter.Core.Interfaces
 {
@@ -18,6 +19,8 @@ namespace PDFerter.Core.Interfaces
         Task<bool> splitTwoPDFs(string pdfFilePath, int splitIndex);
 
         Task<byte[]> CreateZipResult();
+
+        Task<List<byte[]>> testSplit(IFormFile pdfFile, int splitIndex);
     }
 
 }

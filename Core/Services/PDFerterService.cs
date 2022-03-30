@@ -180,6 +180,49 @@ namespace PDFerter.Core.Services
 
             return filePath;
         }
+        public async Task<List<byte[]>> testSplit(IFormFile stream, int splitIndex)
+        {
+            var pdfFile = stream.OpenReadStream();
+            PdfDocument inputPDFDocument = PdfReader.Open(pdfFile, PdfDocumentOpenMode.Import);
+
+            PdfDocument document1 = new PdfDocument();
+
+
+            PdfDocument document2 = new PdfDocument();
+
+            byte[] file1 = null;
+            byte[] file2 = null;
+
+            if (splitIndex <= inputPDFDocument.PageCount - 1 && splitIndex > 0)
+            {
+                for (int i = 0; i < splitIndex; i++)
+                {
+                    document1.AddPage(inputPDFDocument.Pages[i]);
+                }
+                using (MemoryStream stream1 = new MemoryStream())
+                {
+                    document1.Save(stream1, true);
+                    file1 = stream1.ToArray(); ;
+                }
+
+
+
+                for (int i = splitIndex; i <= inputPDFDocument.PageCount - 1; i++)
+                {
+                    document2.AddPage(inputPDFDocument.Pages[i]);
+                }
+                using (MemoryStream stream2 = new MemoryStream())
+                {
+                    document1.Save(stream2, true);
+                    file2 = stream2.ToArray(); ;
+                }
+            }
+
+            pdfFile.Close();
+            return new List<byte[]>() { file1, file2 };
+        }
+
+
     }
 
 }

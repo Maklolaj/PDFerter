@@ -49,5 +49,20 @@ namespace PDFerter.Controllers
 
             return BadRequest("Unsupported file format");
         }
+
+        // TODO Rewrite whole logic to in memory !!!
+        [HttpPost("Test")]
+        public async Task<IActionResult> Test([FromRoute] string index, SplitFileModel file)
+        {
+
+
+            var result = await _pdfService.testSplit(file.PdfFile, 2);
+
+            var a = File(result[0], "application/octet-stream", "resultA.pdf");
+
+            return a;
+        }
+
+
     }
 }
