@@ -1,6 +1,5 @@
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PDFerter.Contracts;
@@ -22,13 +21,12 @@ namespace PDFerter.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _pdfService.mergeTwoPDFs(await _pdfService.saveFilesLocally(new List<IFormFile>() { files.PdfFileOne, files.PdfFileTwo }));
-
-                var realResultFile = File(await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}result.pdf"),
-                    "application/octet-stream", "result.pdf");
-
-                _pdfService.performDeleteFile(@$"{LocalPaths.resultFilesPath}result.pdf");
-                return realResultFile;
+                var mergeResult = await _pdfService.mergeTwoPDFs(files.PdfFileOne, files.PdfFileTwo);
+                if (mergeResult != null)
+                {
+                    return File(mergeResult, "application/pdf", "test.pdf");
+                }
+                return BadRequest("Bad Request");
             }
 
             return BadRequest("Unsupported file format");
@@ -39,30 +37,16 @@ namespace PDFerter.Controllers
         {
             if (ModelState.IsValid && int.TryParse(index, out int number))
             {
-                if (await _pdfService.splitTwoPDFs(await _pdfService.performSaveFile(file.PdfFile), number))
+                var splitResult = await _pdfService.splitPDF(file.PdfFile, Int32.Parse(index));
+                if (splitResult != null)
                 {
-                    var finalResult = File(await _pdfService.CreateZipResult(), "application/zip", "result.zip");
-                    return finalResult;
+                    var zip = _pdfService.CreateZipResult(splitResult);
+                    var result = File(zip, "application/octet-stream", "result.zip");
+                    return result;
                 }
-                return BadRequest("Invalid index");
+                return BadRequest("Bad Request");
             }
-
-            return BadRequest("Unsupported file format");
+            return BadRequest("Bad Request");
         }
-
-        // TODO Rewrite whole logic to in memory !!!
-        [HttpPost("Test")]
-        public async Task<IActionResult> Test([FromRoute] string index, SplitFileModel file)
-        {
-
-
-            var result = await _pdfService.testSplit(file.PdfFile, 2);
-
-            var a = File(result[0], "application/octet-stream", "resultA.pdf");
-
-            return a;
-        }
-
-
     }
 }
