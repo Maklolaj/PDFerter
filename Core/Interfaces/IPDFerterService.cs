@@ -8,19 +8,11 @@ namespace PDFerter.Core.Interfaces
 {
     public interface IPDFerterService
     {
-        Task<string[]> saveFilesLocally(ICollection<IFormFile> files);
+        Task<byte[]> mergeTwoPDFs(IFormFile PdfFileOne, IFormFile PdfFileTwo);
 
-        Task<PdfDocument> mergeTwoPDFs(string[] pdfFilePaths);
+        byte[] CreateZipResult(List<byte[]> result);
 
-        void performDeleteFile(string filePath);
-
-        Task<string> performSaveFile(IFormFile filePath);
-
-        Task<bool> splitTwoPDFs(string pdfFilePath, int splitIndex);
-
-        Task<byte[]> CreateZipResult();
-
-        Task<List<byte[]>> testSplit(IFormFile pdfFile, int splitIndex);
+        Task<List<byte[]>> splitPDF(IFormFile pdfFile, int splitIndex);
     }
 
 }

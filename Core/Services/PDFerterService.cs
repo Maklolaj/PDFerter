@@ -20,24 +20,13 @@ namespace PDFerter.Core.Services
             _logger = logger;
         }
 
-        public async Task<string[]> saveFilesLocally(ICollection<IFormFile> files)
-        {
-            List<string> filepaths = new List<string>();
-
-            foreach (IFormFile file in files)
-            {
-                filepaths.Add(await performSaveFile(file));
-            }
-            return filepaths.ToArray();
-        }
-
-        public async Task<PdfDocument> mergeTwoPDFs(string[] pdfFilePaths)
+        public async Task<byte[]> mergeTwoPDFs(IFormFile PdfFileOne, IFormFile PdfFileTwo)
         {
             PdfDocument document = new PdfDocument();
 
-            foreach (var filePath in pdfFilePaths)
+            foreach (var fileStream in new List<Stream>() { PdfFileOne.OpenReadStream(), PdfFileTwo.OpenReadStream() })
             {
-                PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(filePath, PdfDocumentOpenMode.Import));
+                PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(fileStream, PdfDocumentOpenMode.Import));
 
                 document.Version = inputPDFDocument.Version;
 
@@ -46,144 +35,15 @@ namespace PDFerter.Core.Services
                     document.AddPage(page);
                 }
             }
-
-            foreach (var filePath in pdfFilePaths)
-            {
-                performDeleteFile(filePath);
-            }
-
-            document.Save(@$"{LocalPaths.resultFilesPath}result.pdf");
-
-            return PdfReader.Open(@$"{LocalPaths.resultFilesPath}result.pdf", PdfDocumentOpenMode.Import);
+            MemoryStream stream = new MemoryStream();
+            document.Save(stream);
+            byte[] docBytes = stream.ToArray();
+            return docBytes;
         }
 
-        public async Task<bool> splitTwoPDFs(string pdfFilePath, int splitIndex)
+        public async Task<List<byte[]>> splitPDF(IFormFile file, int splitIndex)
         {
-            PdfDocument inputPDFDocument = await Task.Run(() => PdfReader.Open(pdfFilePath, PdfDocumentOpenMode.Import));
-
-            PdfDocument document1 = new PdfDocument();
-            document1.Version = inputPDFDocument.Version;
-
-            PdfDocument document2 = new PdfDocument();
-            document2.Version = inputPDFDocument.Version;
-
-            if (splitIndex <= inputPDFDocument.PageCount - 1 && splitIndex > 0)
-            {
-                for (int i = 0; i < splitIndex; i++)
-                {
-                    document1.AddPage(inputPDFDocument.Pages[i]);
-                }
-                document1.Save(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
-
-                for (int i = splitIndex; i <= inputPDFDocument.PageCount - 1; i++)
-                {
-                    document2.AddPage(inputPDFDocument.Pages[i]);
-                }
-                document2.Save(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
-
-                performDeleteFile(pdfFilePath);
-                return true;
-            }
-            return false;
-        }
-
-        public async Task<byte[]> CreateZipResult()
-        {
-            var file1 = await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
-            var file2 = await System.IO.File.ReadAllBytesAsync(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
-            var result = new List<byte[]> { file1, file2 };
-
-            using (ZipOutputStream zipOutputStream = new ZipOutputStream(System.IO.File.Create(@$"{LocalPaths.resultFilesPath}MyZup.zip")))
-            {
-                zipOutputStream.SetLevel(9);
-
-                byte[] buffer = new byte[4096];
-
-                for (int i = 0; i < result.Count; i++)
-                {
-                    ZipEntry entry = new ZipEntry($"splitResult{i + 1}.pdf");
-                    entry.DateTime = DateTime.Now;
-                    entry.IsUnicodeText = true;
-                    zipOutputStream.PutNextEntry(entry);
-
-                    using (FileStream oFileStream = System.IO.File.OpenRead($@"{LocalPaths.resultFilesPath}splitResult{i + 1}.pdf"))
-                    {
-                        int sourceBytes;
-                        do
-                        {
-                            sourceBytes = oFileStream.Read(buffer, 0, buffer.Length);
-                            zipOutputStream.Write(buffer, 0, sourceBytes);
-                        } while (sourceBytes > 0);
-                    }
-
-                }
-                zipOutputStream.Finish();
-                zipOutputStream.Flush();
-                zipOutputStream.Close();
-            }
-
-            performDeleteFile(@$"{LocalPaths.resultFilesPath}splitResult1.pdf");
-            performDeleteFile(@$"{LocalPaths.resultFilesPath}splitResult2.pdf");
-            var finalResult = System.IO.File.ReadAllBytes(@$"{LocalPaths.resultFilesPath}MyZup.zip");
-
-            if (System.IO.File.Exists(@$"{LocalPaths.resultFilesPath}MyZup.zip"))
-            {
-                System.IO.File.Delete(@$"{LocalPaths.resultFilesPath}MyZup.zip");
-            }
-
-            if (finalResult == null)
-            {
-                throw new Exception(String.Format("Nothing Found"));
-            }
-
-            return finalResult;
-        }
-
-        public void performDeleteFile(string filePath)
-        {
-            try
-            {
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                    _logger.LogInformation("File deleted.");
-                }
-                else
-                {
-                    _logger.LogInformation("File not found.");
-                }
-            }
-            catch (IOException ioExp)
-            {
-                _logger.LogInformation(ioExp.Message);
-            }
-        }
-
-        public async Task<string> performSaveFile(IFormFile file)
-        {
-            var id = Guid.NewGuid();
-            var filePath = @$"{LocalPaths.workFilesPath}/file{id}.pdf";
-            try
-            {
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(fileStream);
-                    fileStream.Close();
-                    _logger.LogInformation($"file{id}.pdf Saved.");
-                }
-
-            }
-            catch (IOException ioExp)
-            {
-                _logger.LogInformation(ioExp.Message);
-            }
-
-            return filePath;
-        }
-        public async Task<List<byte[]>> testSplit(IFormFile stream, int splitIndex)
-        {
-            var pdfFile = stream.OpenReadStream();
-            PdfDocument inputPDFDocument = PdfReader.Open(pdfFile, PdfDocumentOpenMode.Import);
+            PdfDocument inputPDFDocument = PdfReader.Open(file.OpenReadStream(), PdfDocumentOpenMode.Import);
 
             PdfDocument document1 = new PdfDocument();
 
@@ -202,7 +62,8 @@ namespace PDFerter.Core.Services
                 using (MemoryStream stream1 = new MemoryStream())
                 {
                     document1.Save(stream1, true);
-                    file1 = stream1.ToArray(); ;
+                    file1 = stream1.ToArray();
+                    stream1.Close();
                 }
 
 
@@ -213,16 +74,45 @@ namespace PDFerter.Core.Services
                 }
                 using (MemoryStream stream2 = new MemoryStream())
                 {
-                    document1.Save(stream2, true);
-                    file2 = stream2.ToArray(); ;
+                    document2.Save(stream2, true);
+                    file2 = stream2.ToArray();
+                    stream2.Close();
                 }
-            }
 
-            pdfFile.Close();
-            return new List<byte[]>() { file1, file2 };
+                return new List<byte[]>() { file1, file2 };
+            }
+            return null;
+
+
         }
 
+        public byte[] CreateZipResult(List<byte[]> result)
+        {
+            MemoryStream outputMemStream = new MemoryStream();
 
+            using (ZipOutputStream zipOutputStream = new ZipOutputStream(outputMemStream))
+            {
+                zipOutputStream.SetLevel(9);
+
+                byte[] buffer = new byte[4096];
+
+                for (int i = 0; i < result.Count; i++)
+                {
+                    ZipEntry entry = new ZipEntry($"splitResult{i + 1}.pdf");
+                    entry.DateTime = DateTime.Now;
+                    entry.IsUnicodeText = true;
+                    zipOutputStream.PutNextEntry(entry);
+
+                    zipOutputStream.Write(result[i]);
+
+                    zipOutputStream.CloseEntry();
+                }
+                zipOutputStream.Close();
+            }
+            byte[] byteArray = outputMemStream.ToArray();
+
+            return byteArray;
+
+        }
     }
-
 }
