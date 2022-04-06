@@ -25,9 +25,10 @@ namespace PDFerter.Validators
                 {
                     return new ValidationResult(GetErrorMessage());
                 }
+                return ValidationResult.Success;
             }
 
-            return ValidationResult.Success;
+            return new ValidationResult("File does not exist");
         }
 
         public string GetErrorMessage()
@@ -54,14 +55,16 @@ namespace PDFerter.Validators
                 {
                     return new ValidationResult(GetErrorMessage());
                 }
+
+                return ValidationResult.Success;
             }
 
-            return ValidationResult.Success;
+            return new ValidationResult("File does not exist");
         }
 
         public string GetErrorMessage()
         {
-            return $"Maximum allowed file size is { _maxFileSize} bytes.";
+            return $"Maximum allowed file size is {_maxFileSize} bytes.";
         }
     }
 }
