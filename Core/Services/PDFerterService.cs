@@ -44,10 +44,7 @@ namespace PDFerter.Core.Services
         public async Task<List<byte[]>> splitPDF(IFormFile file, int splitIndex)
         {
             PdfDocument inputPDFDocument = PdfReader.Open(file.OpenReadStream(), PdfDocumentOpenMode.Import);
-
             PdfDocument document1 = new PdfDocument();
-
-
             PdfDocument document2 = new PdfDocument();
 
             byte[] file1 = null;
@@ -55,6 +52,7 @@ namespace PDFerter.Core.Services
 
             if (splitIndex <= inputPDFDocument.PageCount - 1 && splitIndex > 0)
             {
+                // Create first PDF from page[0] to page[index]
                 for (int i = 0; i < splitIndex; i++)
                 {
                     document1.AddPage(inputPDFDocument.Pages[i]);
@@ -66,8 +64,7 @@ namespace PDFerter.Core.Services
                     stream1.Close();
                 }
 
-
-
+                // Create second PDF from page[index] to page[-1]
                 for (int i = splitIndex; i <= inputPDFDocument.PageCount - 1; i++)
                 {
                     document2.AddPage(inputPDFDocument.Pages[i]);
@@ -82,8 +79,6 @@ namespace PDFerter.Core.Services
                 return new List<byte[]>() { file1, file2 };
             }
             return null;
-
-
         }
 
         public byte[] CreateZipResult(List<byte[]> result)
@@ -94,8 +89,7 @@ namespace PDFerter.Core.Services
             {
                 zipOutputStream.SetLevel(9);
 
-                byte[] buffer = new byte[4096];
-
+                // Put each PDF in ZIP file
                 for (int i = 0; i < result.Count; i++)
                 {
                     ZipEntry entry = new ZipEntry($"splitResult{i + 1}.pdf");
